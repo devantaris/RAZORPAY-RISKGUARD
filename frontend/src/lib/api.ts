@@ -1,4 +1,4 @@
-﻿// Types matching backend Pydantic schemas exactly
+// Types matching backend Pydantic schemas exactly
 export type Decision = 'APPROVE' | 'DECLINE' | 'STEP_UP' | 'PEND';
 
 export interface ShapFeature {
@@ -46,6 +46,16 @@ export interface BanditDiagnostics {
   arm_summary: Record<string, { count: number; avg_reward: number }>;
 }
 
+export interface BatchAssessRequest {
+  transactions: AssessRequest[];
+}
+
+export interface BatchAssessResponse {
+  results: AssessResponse[];
+  total_ms: number;
+  throughput_tps: number;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 export async function assessTransaction(req: AssessRequest): Promise<AssessResponse> {
@@ -58,13 +68,25 @@ export async function assessTransaction(req: AssessRequest): Promise<AssessRespo
   return res.json();
 }
 
-export async function getHealth(): Promise<{ status: string; pipeline: string; uptime_s: number }> {
+export async function batchAssessTransactions(transactions: AssessRequest[]): Promise<BatchAssessResponse> {
+  const res = await fetch(`${API_BASE}/v1/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactions }),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getHealth(): Promise<{ status: string; service: string; version: string; uptime_s: number; pipeline: string }> {
   const res = await fetch(`${API_BASE}/v1/health`);
+  if (!res.ok) throw new Error(`Health check error: ${res.status}`);
   return res.json();
 }
 
 export async function getMerchantThreshold(merchantId: string): Promise<BanditDiagnostics> {
   const res = await fetch(`${API_BASE}/v1/merchants/${merchantId}/threshold`);
+  if (!res.ok) throw new Error(`Merchant threshold error: ${res.status}`);
   return res.json();
 }
 
@@ -74,6 +96,7 @@ export async function setMerchantThreshold(merchantId: string, offset: number): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ offset }),
   });
+  if (!res.ok) throw new Error(`Set threshold error: ${res.status}`);
   return res.json();
 }
 
