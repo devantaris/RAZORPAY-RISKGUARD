@@ -1,0 +1,56 @@
+﻿# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Secrets & Environment ────────────────────────────────────────────────────
+backend/.env
+.env
+*.env.*
+!.env.example
+
+# ── ML Artifacts (too large for git — regenerate with train_payment_models.py)
+backend/artifacts/*.pkl
+backend/artifacts/*.joblib
+backend/data/
+!backend/data/.gitkeep
+
+# ── Logs & temp ──────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+*.swo
+
+# ── Node / Next.js (Phase 4) ─────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# ── Docker volumes ────────────────────────────────────────────────────────────
+postgres_data/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.sublime-project
