@@ -1,19 +1,27 @@
-﻿'use client';
+'use client';
 import { useEffect, useRef, useState } from 'react';
-import { AssessResponse, streamTransactions } from '@/lib/api';
 import { DecisionBadge } from './DecisionBadge';
+import type { AssessResponse } from '@/lib/api';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 export function LiveFeed() {
   const [events, setEvents] = useState<AssessResponse[]>([]);
   const [connected, setConnected] = useState(false);
+  const [error, setError] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setConnected(true);
-    const stop = streamTransactions((evt) => {
-      setEvents(prev => [evt, ...prev].slice(0, 50));
-    });
-    return () => { stop(); setConnected(false); };
+    const evtSource = new EventSource(`${API_BASE}/v1/stream`);
+    evtSource.onopen = () => { setConnected(true); setError(''); };
+    evtSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data) as AssessResponse;
+        setEvents(prev => [data, ...prev].slice(0, 50));
+      } catch { /* ignore malformed */ }
+    };
+    evtSource.onerror = () => { setConnected(false); setError('Backend offline — start backend and refresh'); };
+    return () => { evtSource.close(); setConnected(false); };
   }, []);
 
   useEffect(() => {
@@ -25,8 +33,10 @@ export function LiveFeed() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 mb-3">
-        <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-        <span className="text-xs text-gray-500">{connected ? 'Live stream connected' : 'Connecting...'}</span>
+        <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+        <span className={`text-xs ${connected ? 'text-gray-500' : 'text-red-500'}`}>
+          {connected ? 'Live stream connected' : error || 'Connecting to backend...'}
+        </span>
         <div className="ml-auto flex gap-3 text-xs">
           {Object.entries(counts).map(([d, n]) => (
             <span key={d} className="text-gray-600">{d}: <b>{n}</b></span>
