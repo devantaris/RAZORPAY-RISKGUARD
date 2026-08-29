@@ -1,5 +1,5 @@
-﻿import Link from 'next/link';
-import { ShieldAlert, Zap, BrainCircuit, ArrowRight, Activity, Cpu } from 'lucide-react';
+import Link from 'next/link';
+import { ShieldAlert, Zap, BrainCircuit, ArrowRight, Activity, Cpu, ShieldCheck } from 'lucide-react';
 
 export default function LandingPage() {
   return (
