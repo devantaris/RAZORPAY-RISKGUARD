@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: razorpay-riskguard-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: ENVIRONMENT
+        value: production
+      - key: LLM_PROVIDER
+        value: mock
+      - key: CORS_ORIGINS
+        value: '["*"]' # Update this to your frontend URL in production
+      - key: REDIS_URL
+        fromDatabase:
+          name: riskguard-redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: riskguard-postgres
+          property: connectionString
+
+  - type: redis
+    name: riskguard-redis
+    ipAllowList: [] # only allow internal connections
+
+  - type: psql
+    name: riskguard-postgres
+    databaseName: riskguard
+    user: postgres
+    plan: free
