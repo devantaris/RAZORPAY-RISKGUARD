@@ -1,4 +1,4 @@
-﻿"""
+"""
 benchmark.py
 =============
 Phase 5: High-Concurrency Latency & Throughput Stress Tester
@@ -6,6 +6,7 @@ Phase 5: High-Concurrency Latency & Throughput Stress Tester
 Measures latency percentiles (p50, p90, p95, p99), throughput (TPS),
 stage routing distribution, and SLA compliance against the <100ms target.
 """
+
 from __future__ import annotations
 
 import sys
@@ -37,8 +38,8 @@ SCENARIOS = [
             "currency": "INR",
             "card_bin": "438935",
             "payment_method": "CARD",
-            "device_id": "dev_new_unseen_01"
-        }
+            "device_id": "dev_new_unseen_01",
+        },
     },
     {
         "name": "Low-Risk Food UPI",
@@ -48,8 +49,8 @@ SCENARIOS = [
             "amount": 349.0,
             "currency": "INR",
             "payment_method": "UPI",
-            "device_id": "dev_known_iphone"
-        }
+            "device_id": "dev_known_iphone",
+        },
     },
     {
         "name": "Uncertain Travel Booking",
@@ -60,8 +61,8 @@ SCENARIOS = [
             "currency": "INR",
             "card_bin": "400066",
             "payment_method": "CARD",
-            "device_id": "dev_tablet_new"
-        }
+            "device_id": "dev_tablet_new",
+        },
     },
     {
         "name": "Medium-Risk Electronics",
@@ -72,8 +73,8 @@ SCENARIOS = [
             "currency": "INR",
             "card_bin": "410057",
             "payment_method": "CARD",
-            "device_id": "dev_laptop_01"
-        }
+            "device_id": "dev_laptop_01",
+        },
     },
     {
         "name": "Standard E-Commerce Card",
@@ -84,10 +85,11 @@ SCENARIOS = [
             "currency": "INR",
             "card_bin": "512345",
             "payment_method": "CARD",
-            "device_id": "dev_phone_reg"
-        }
-    }
+            "device_id": "dev_phone_reg",
+        },
+    },
 ]
+
 
 def check_health() -> bool:
     try:
@@ -96,6 +98,7 @@ def check_health() -> bool:
             return data.get("pipeline") == "ready"
     except Exception:
         return False
+
 
 def send_request(payload: dict) -> tuple[float, dict | None, str | None]:
     """Sends a single synchronous request and returns (latency_ms, response_data, error)"""
@@ -111,9 +114,12 @@ def send_request(payload: dict) -> tuple[float, dict | None, str | None]:
         lat = (time.perf_counter() - t0) * 1000
         return lat, None, str(e)
 
+
 def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, Any]:
     print("=" * 70)
-    print(f"  RAZORPAY RISKGUARD — HIGH-CONCURRENCY BENCHMARK ({num_requests} requests)")
+    print(
+        f"  RAZORPAY RISKGUARD — HIGH-CONCURRENCY BENCHMARK ({num_requests} requests)"
+    )
     print("=" * 70)
 
     if not check_health():
@@ -125,25 +131,27 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
     send_request(SCENARIOS[0]["payload"])
     time.sleep(0.5)
 
-    print(f"[*] Executing {num_requests} assessments across {len(SCENARIOS)} payment scenarios...")
-    
+    print(
+        f"[*] Executing {num_requests} assessments across {len(SCENARIOS)} payment scenarios..."
+    )
+
     from concurrent.futures import ThreadPoolExecutor
-    
+
     latencies: List[float] = []
     decisions: Dict[str, int] = {}
     stages: Dict[str, int] = {}
     errors: int = 0
 
     t_start = time.perf_counter()
-    
+
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         futures = []
         for i in range(num_requests):
             scen = SCENARIOS[i % len(SCENARIOS)]
             p = dict(scen["payload"])
-            p["transaction_id"] = f"bench_{i+1:04d}_{p['merchant_id']}"
+            p["transaction_id"] = f"bench_{i + 1:04d}_{p['merchant_id']}"
             futures.append(executor.submit(send_request, p))
-            
+
         for f in futures:
             lat, body, err = f.result()
             latencies.append(lat)
@@ -174,12 +182,16 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
     print(f"  Total Requests       : {num_requests}")
     print(f"  Total Time Elapsed   : {total_time:.2f}s")
     print(f"  Throughput (TPS)     : {tps:.1f} requests/second")
-    print(f"  Error Count          : {errors} (Success rate: {(num_requests-errors)/num_requests*100:.1f}%)")
+    print(
+        f"  Error Count          : {errors} (Success rate: {(num_requests - errors) / num_requests * 100:.1f}%)"
+    )
     print()
     print("  Latency Percentiles (End-to-End HTTP + V1-V4 + Agent):")
     print(f"    Min Latency        : {min_lat:.2f} ms")
     print(f"    Mean Latency       : {mean_lat:.2f} ms")
-    print(f"    p50 (Median)       : {p50:.2f} ms  {'[PASS <100ms SLA]' if p50 < 100 else '[WARN]'}")
+    print(
+        f"    p50 (Median)       : {p50:.2f} ms  {'[PASS <100ms SLA]' if p50 < 100 else '[WARN]'}"
+    )
     print(f"    p75 Latency        : {p75:.2f} ms")
     print(f"    p90 Latency        : {p90:.2f} ms")
     print(f"    p95 Latency        : {p95:.2f} ms")
@@ -188,11 +200,11 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
     print()
     print("  Decision Distribution:")
     for d, c in sorted(decisions.items()):
-        print(f"    {d:<12}: {c:>4} ({c/num_requests*100:5.1f}%)")
+        print(f"    {d:<12}: {c:>4} ({c / num_requests * 100:5.1f}%)")
     print()
     print("  Pipeline Stage Routing Distribution:")
     for s, c in sorted(stages.items()):
-        print(f"    Stage {s:<8}: {c:>4} ({c/num_requests*100:5.1f}%)")
+        print(f"    Stage {s:<8}: {c:>4} ({c / num_requests * 100:5.1f}%)")
     print("-" * 70)
 
     summary = {
@@ -220,14 +232,18 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
     docs_dir = os.path.join(BACKEND_DIR, "..", "docs")
     os.makedirs(docs_dir, exist_ok=True)
     report_path = os.path.join(docs_dir, "BENCHMARK_REPORT.md")
-    
+
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("# Razorpay RiskGuard — Performance & Latency Benchmark Report\n\n")
         f.write(f"**Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}\n")
-        f.write(f"**Hardware Environment:** Local Benchmark (Windows, FastAPI + XGBoost + DS Fusion)\n\n")
+        f.write(
+            f"**Hardware Environment:** Local Benchmark (Windows, FastAPI + XGBoost + DS Fusion)\n\n"
+        )
         f.write("## 1. Executive Summary\n\n")
         f.write(f"- **Throughput:** `{tps:.1f} TPS`\n")
-        f.write(f"- **p50 Latency:** `{p50:.2f} ms` (Target: `<100ms` — **{'PASSED' if p50 < 100 else 'FAILED'}**)\n")
+        f.write(
+            f"- **p50 Latency:** `{p50:.2f} ms` (Target: `<100ms` — **{'PASSED' if p50 < 100 else 'FAILED'}**)\n"
+        )
         f.write(f"- **p95 Latency:** `{p95:.2f} ms`\n")
         f.write(f"- **Total Requests Tested:** `{num_requests}`\n")
         f.write(f"- **Error Rate:** `{errors / num_requests * 100:.2f}%`\n\n")
@@ -236,7 +252,9 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
         f.write("|:---|:---|:---|:---|\n")
         f.write(f"| **Min** | `{min_lat:.2f} ms` | - | ✅ |\n")
         f.write(f"| **Mean** | `{mean_lat:.2f} ms` | - | ✅ |\n")
-        f.write(f"| **p50 (Median)** | `{p50:.2f} ms` | `< 100 ms` | **{'PASS' if p50 < 100 else 'FAIL'}** |\n")
+        f.write(
+            f"| **p50 (Median)** | `{p50:.2f} ms` | `< 100 ms` | **{'PASS' if p50 < 100 else 'FAIL'}** |\n"
+        )
         f.write(f"| **p75** | `{p75:.2f} ms` | - | ✅ |\n")
         f.write(f"| **p90** | `{p90:.2f} ms` | `< 150 ms` | ✅ |\n")
         f.write(f"| **p95** | `{p95:.2f} ms` | `< 200 ms` | ✅ |\n")
@@ -245,16 +263,25 @@ def run_benchmark(num_requests: int = 200, concurrency: int = 10) -> Dict[str, A
         f.write("## 3. Decision Breakdown\n\n")
         f.write("| Decision | Count | Percentage |\n|:---|:---|:---|\n")
         for d, c in sorted(decisions.items()):
-            f.write(f"| `{d}` | {c} | {c/num_requests*100:.1f}% |\n")
+            f.write(f"| `{d}` | {c} | {c / num_requests * 100:.1f}% |\n")
         f.write("\n## 4. Pipeline Stage Routing\n\n")
         f.write("| Stage | Count | Percentage | Description |\n|:---|:---|:---|:---|\n")
-        f.write(f"| `V1` | {stages.get('V1', 0)} | {stages.get('V1', 0)/num_requests*100:.1f}% | Fast Filter (Ensemble + IsoForest) |\n")
-        f.write(f"| `V2` | {stages.get('V2', 0)} | {stages.get('V2', 0)/num_requests*100:.1f}% | Calibrated SVM Second Opinion |\n")
-        f.write(f"| `V3` | {stages.get('V3', 0)} | {stages.get('V3', 0)/num_requests*100:.1f}% | Dempster-Shafer 3-Source Belief Fusion |\n")
-        f.write(f"| `V4` | {stages.get('V4', 0)} | {stages.get('V4', 0)/num_requests*100:.1f}% | SHAP Deferral & Reason Code Generation |\n")
-        
+        f.write(
+            f"| `V1` | {stages.get('V1', 0)} | {stages.get('V1', 0) / num_requests * 100:.1f}% | Fast Filter (Ensemble + IsoForest) |\n"
+        )
+        f.write(
+            f"| `V2` | {stages.get('V2', 0)} | {stages.get('V2', 0) / num_requests * 100:.1f}% | Calibrated SVM Second Opinion |\n"
+        )
+        f.write(
+            f"| `V3` | {stages.get('V3', 0)} | {stages.get('V3', 0) / num_requests * 100:.1f}% | Dempster-Shafer 3-Source Belief Fusion |\n"
+        )
+        f.write(
+            f"| `V4` | {stages.get('V4', 0)} | {stages.get('V4', 0) / num_requests * 100:.1f}% | SHAP Deferral & Reason Code Generation |\n"
+        )
+
     print(f"\n[+] Benchmark report saved to docs/BENCHMARK_REPORT.md")
     return summary
+
 
 if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 200

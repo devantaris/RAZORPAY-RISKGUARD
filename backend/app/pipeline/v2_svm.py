@@ -1,4 +1,4 @@
-﻿"""
+"""
 v2_svm.py
 ==========
 V2: Calibrated SVM — Second Opinion on ABSTAIN cases
@@ -12,6 +12,7 @@ Otherwise              -> remain ABSTAIN    (collapses to PEND in V4)
 Architecture: LinearSVC + CalibratedClassifierCV(method='sigmoid', cv=5)
 This matches the v2_playground SVM in Knowing-When-Not-to-Decide exactly.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,7 +28,7 @@ from sklearn.svm import LinearSVC
 logger = logging.getLogger("riskguard.v2")
 
 # Cost-optimal threshold from research (maximises net utility)
-CLEAR_THRESHOLD = 0.01   # P(fraud) < 1% -> safe to approve
+CLEAR_THRESHOLD = 0.01  # P(fraud) < 1% -> safe to approve
 
 
 class V2SVM:
@@ -37,23 +38,23 @@ class V2SVM:
     """
 
     def __init__(self):
-        self.svm:    Optional[CalibratedClassifierCV] = None
+        self.svm: Optional[CalibratedClassifierCV] = None
         self.scaler: Optional[StandardScaler] = None
         self._loaded = False
 
     def load(self, artifact_dir: str) -> None:
-        svm_path    = os.path.join(artifact_dir, "v2_svm.pkl")
+        svm_path = os.path.join(artifact_dir, "v2_svm.pkl")
         scaler_path = os.path.join(artifact_dir, "v2_scaler.pkl")
         if not os.path.exists(svm_path):
             raise FileNotFoundError(f"V2 SVM not found: {svm_path}")
-        self.svm    = joblib.load(svm_path)
+        self.svm = joblib.load(svm_path)
         self.scaler = joblib.load(scaler_path)
         self._loaded = True
         logger.info("V2 SVM loaded.")
 
     def save(self, artifact_dir: str) -> None:
         os.makedirs(artifact_dir, exist_ok=True)
-        joblib.dump(self.svm,    os.path.join(artifact_dir, "v2_svm.pkl"))
+        joblib.dump(self.svm, os.path.join(artifact_dir, "v2_svm.pkl"))
         joblib.dump(self.scaler, os.path.join(artifact_dir, "v2_scaler.pkl"))
         logger.info(f"V2 saved to {artifact_dir}")
 
@@ -62,8 +63,11 @@ class V2SVM:
         self.scaler = StandardScaler()
         X_sc = self.scaler.fit_transform(X_train)
         base_svm = LinearSVC(
-            C=1.0, class_weight="balanced",
-            max_iter=10000, random_state=42, dual="auto",
+            C=1.0,
+            class_weight="balanced",
+            max_iter=10000,
+            random_state=42,
+            dual="auto",
         )
         self.svm = CalibratedClassifierCV(base_svm, method="sigmoid", cv=5)
         self.svm.fit(X_sc, y_train)

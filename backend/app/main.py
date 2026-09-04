@@ -3,6 +3,7 @@ Razorpay RiskGuard — FastAPI Application Entry Point
 ======================================================
 Staged Uncertainty Fraud Defense + Agentic AI Layer
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,10 +18,13 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 
 logger = logging.getLogger("riskguard")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+)
 
 
 # ── Lifespan: startup / shutdown ────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -31,6 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Lazy-import pipeline on startup so models are loaded once
     try:
         from app.pipeline.orchestrator import get_orchestrator
+
         orch = get_orchestrator()
         logger.info(f"  Pipeline ready: {orch.status()}")
     except Exception as e:
@@ -70,6 +75,7 @@ app.add_middleware(
 
 # ── Request timing middleware ────────────────────────────────────────────────
 
+
 @app.middleware("http")
 async def add_process_time_header(request, call_next):
     start = time.perf_counter()
@@ -83,19 +89,20 @@ async def add_process_time_header(request, call_next):
 
 from app.api.v1 import assess, health, stream, merchants
 
-app.include_router(assess.router,    prefix=settings.API_V1_STR, tags=["Assessment"])
-app.include_router(health.router,    prefix=settings.API_V1_STR, tags=["Health"])
-app.include_router(stream.router,    prefix=settings.API_V1_STR, tags=["Stream"])
+app.include_router(assess.router, prefix=settings.API_V1_STR, tags=["Assessment"])
+app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health"])
+app.include_router(stream.router, prefix=settings.API_V1_STR, tags=["Stream"])
 app.include_router(merchants.router, prefix=settings.API_V1_STR, tags=["Merchants"])
 
 
 # ── Root ─────────────────────────────────────────────────────────────────────
+
 
 @app.get("/", include_in_schema=False)
 async def root():
     return {
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "docs":    "/docs",
-        "health":  f"{settings.API_V1_STR}/health",
+        "docs": "/docs",
+        "health": f"{settings.API_V1_STR}/health",
     }

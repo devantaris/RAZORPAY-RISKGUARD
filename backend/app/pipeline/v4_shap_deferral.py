@@ -1,4 +1,4 @@
-﻿"""
+"""
 v4_shap_deferral.py
 ====================
 V4: SHAP Tree Explainer — generates PEND reason codes and risk report features.
@@ -14,6 +14,7 @@ The SHAP model is a raw XGBClassifier (NOT calibrated) because
 shap.TreeExplainer requires direct access to the tree structure.
 It is trained in parallel with the V1 ensemble but saved separately.
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,9 +77,14 @@ class V4ShapDeferral:
         logger.info("Training V4: Raw XGBClassifier for SHAP TreeExplainer...")
         scale_pos_weight = float((len(y_train) - y_train.sum()) / max(y_train.sum(), 1))
         self.shap_model = XGBClassifier(
-            n_estimators=300, max_depth=4, learning_rate=0.05,
-            scale_pos_weight=scale_pos_weight, eval_metric="logloss",
-            random_state=42, tree_method="hist", device="cpu",
+            n_estimators=300,
+            max_depth=4,
+            learning_rate=0.05,
+            scale_pos_weight=scale_pos_weight,
+            eval_metric="logloss",
+            random_state=42,
+            tree_method="hist",
+            device="cpu",
             verbosity=0,
         )
         self.shap_model.fit(X_train, y_train)
@@ -89,6 +95,7 @@ class V4ShapDeferral:
     def _init_explainer(self) -> None:
         try:
             import shap
+
             self._explainer = shap.TreeExplainer(self.shap_model)
             logger.info("SHAP TreeExplainer initialised.")
         except Exception as e:
@@ -96,7 +103,10 @@ class V4ShapDeferral:
             self._explainer = None
 
     def explain(
-        self, X: np.ndarray, uncertainty_type: str = "UNKNOWN", uncertainty_val: float = 0.0
+        self,
+        X: np.ndarray,
+        uncertainty_type: str = "UNKNOWN",
+        uncertainty_val: float = 0.0,
     ) -> Tuple[List[dict], str]:
         """
         Returns (shap_features_list, reason_code_string).
@@ -109,18 +119,25 @@ class V4ShapDeferral:
 
         try:
             import shap
+
             sv = self._explainer.shap_values(X)[0]  # shape: (n_features,)
             top_idx = np.argsort(np.abs(sv))[::-1][:TOP_K]
 
             shap_features = []
             for rank, fi in enumerate(top_idx):
-                fname = FEATURE_NAMES[fi] if fi < len(FEATURE_NAMES) else f"feature_{fi}"
-                sval  = float(sv[fi])
-                shap_features.append({
-                    "feature":   fname,
-                    "impact":    round(abs(sval), 4),
-                    "direction": "elevates_fraud" if sval > 0 else "suppresses_fraud",
-                })
+                fname = (
+                    FEATURE_NAMES[fi] if fi < len(FEATURE_NAMES) else f"feature_{fi}"
+                )
+                sval = float(sv[fi])
+                shap_features.append(
+                    {
+                        "feature": fname,
+                        "impact": round(abs(sval), 4),
+                        "direction": "elevates_fraud"
+                        if sval > 0
+                        else "suppresses_fraud",
+                    }
+                )
 
             reason_code = "PEND_" + "_".join(f["feature"] for f in shap_features)
             return shap_features, reason_code
@@ -139,13 +156,17 @@ class V4ShapDeferral:
                 top_idx = np.argsort(scores)[::-1][:TOP_K]
                 shap_features = [
                     {
-                        "feature":   FEATURE_NAMES[fi] if fi < len(FEATURE_NAMES) else f"f{fi}",
-                        "impact":    round(float(scores[fi]), 4),
+                        "feature": FEATURE_NAMES[fi]
+                        if fi < len(FEATURE_NAMES)
+                        else f"f{fi}",
+                        "impact": round(float(scores[fi]), 4),
                         "direction": "elevates_fraud",
                     }
                     for fi in top_idx
                 ]
-                return shap_features, "PEND_" + "_".join(f["feature"] for f in shap_features)
+                return shap_features, "PEND_" + "_".join(
+                    f["feature"] for f in shap_features
+                )
             except Exception:
                 pass
         return (

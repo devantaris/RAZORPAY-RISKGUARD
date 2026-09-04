@@ -1,4 +1,4 @@
-﻿"""
+"""
 features.py
 ===========
 Real-time payment feature extractor.
@@ -20,6 +20,7 @@ Payment-specific features (replacing the V1..V28 PCA features from research):
   - payment_method_card:     one-hot CARD
   - hour_sin / hour_cos:     cyclic hour encoding
 """
+
 from __future__ import annotations
 
 import logging
@@ -91,6 +92,7 @@ class FeatureExtractor:
 
         # Time features
         from datetime import datetime, timezone
+
         ts = req.timestamp or datetime.now(timezone.utc)
         hour = ts.hour
         is_odd_hour = 1.0 if (1 <= hour <= 5) else 0.0
@@ -99,8 +101,8 @@ class FeatureExtractor:
 
         # Payment method one-hot
         pm = (req.payment_method or "CARD").upper()
-        pm_upi    = 1.0 if pm == "UPI"    else 0.0
-        pm_card   = 1.0 if pm == "CARD"   else 0.0
+        pm_upi = 1.0 if pm == "UPI" else 0.0
+        pm_card = 1.0 if pm == "CARD" else 0.0
         pm_wallet = 1.0 if pm == "WALLET" else 0.0
 
         return [
@@ -127,7 +129,9 @@ class FeatureExtractor:
             return 1.0
         return 0.0
 
-    async def _get_merchant_avg(self, merchant_id: str, fallback_amount: float) -> float:
+    async def _get_merchant_avg(
+        self, merchant_id: str, fallback_amount: float
+    ) -> float:
         if self.redis:
             try:
                 val = await self.redis.get(f"merchant:avg:{merchant_id}")
@@ -142,14 +146,14 @@ class FeatureExtractor:
         defaults = {"count_1h": 0, "amount_1h": 0.0, "count_24h": 0, "amount_24h": 0.0}
         if self.redis:
             try:
-                key_1h  = f"vel:{customer_id}:1h"
+                key_1h = f"vel:{customer_id}:1h"
                 key_24h = f"vel:{customer_id}:24h"
-                count_1h   = await self.redis.get(f"{key_1h}:count")
-                amount_1h  = await self.redis.get(f"{key_1h}:amount")
-                count_24h  = await self.redis.get(f"{key_24h}:count")
+                count_1h = await self.redis.get(f"{key_1h}:count")
+                amount_1h = await self.redis.get(f"{key_1h}:amount")
+                count_24h = await self.redis.get(f"{key_24h}:count")
                 amount_24h = await self.redis.get(f"{key_24h}:amount")
                 return {
-                    "count_1h":  float(count_1h or 0),
+                    "count_1h": float(count_1h or 0),
                     "amount_1h": float(amount_1h or 0),
                     "count_24h": float(count_24h or 0),
                     "amount_24h": float(amount_24h or 0),

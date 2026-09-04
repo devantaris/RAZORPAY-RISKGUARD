@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import platform
 import sys
@@ -13,12 +13,12 @@ _start_time = time.time()
 
 
 class HealthResponse(BaseModel):
-    status:       str
-    service:      str
-    version:      str
-    uptime_s:     float
-    python:       str
-    pipeline:     str
+    status: str
+    service: str
+    version: str
+    uptime_s: float
+    python: str
+    pipeline: str
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -28,6 +28,7 @@ async def health() -> HealthResponse:
     pipeline_status = "unknown"
     try:
         from app.pipeline.orchestrator import get_orchestrator
+
         pipeline_status = get_orchestrator().status()
     except Exception:
         pipeline_status = "not_loaded"

@@ -1,11 +1,15 @@
-﻿"""Phase 3 end-to-end test: exercises Explanation Agent, Bandit, Chargeback."""
+"""Phase 3 end-to-end test: exercises Explanation Agent, Bandit, Chargeback."""
+
 import sys, json, time, urllib.request as req, urllib.error
 
 BASE = "http://127.0.0.1:8000"
 
+
 def post(path, body):
     data = json.dumps(body).encode()
-    request = req.Request(f"{BASE}{path}", data=data, headers={"Content-Type": "application/json"})
+    request = req.Request(
+        f"{BASE}{path}", data=data, headers={"Content-Type": "application/json"}
+    )
     try:
         with req.urlopen(request, timeout=12) as r:
             return json.loads(r.read())
@@ -14,9 +18,11 @@ def post(path, body):
     except Exception as e:
         return {"error": str(e)}
 
+
 def get(path):
     with req.urlopen(f"{BASE}{path}", timeout=8) as r:
         return json.loads(r.read())
+
 
 # Wait for server ready
 for _ in range(12):
@@ -36,16 +42,19 @@ print("=" * 65)
 # --- Test 1: High-risk jewelry with chargeback risk ---
 print("\n[1] High-risk DECLINE scenario (₹98,000 jewelry, high-risk BIN)")
 t0 = time.perf_counter()
-r1 = post("/v1/assess", {
-    "transaction_id": "txn_P3_001",
-    "merchant_id":    "merch_jewelry_001",
-    "amount":         98000.0,
-    "currency":       "INR",
-    "card_bin":       "438935",
-    "payment_method": "CARD",
-    "device_id":      "dev_unknown_new",
-    "customer_id":    "cust_fraud_sim",
-})
+r1 = post(
+    "/v1/assess",
+    {
+        "transaction_id": "txn_P3_001",
+        "merchant_id": "merch_jewelry_001",
+        "amount": 98000.0,
+        "currency": "INR",
+        "card_bin": "438935",
+        "payment_method": "CARD",
+        "device_id": "dev_unknown_new",
+        "customer_id": "cust_fraud_sim",
+    },
+)
 ms = (time.perf_counter() - t0) * 1000
 rr = r1.get("risk_report", {})
 print(f"  Decision        : {r1['decision']}")
@@ -65,16 +74,19 @@ if rr.get("pend_reason_code"):
 
 # --- Test 2: PEND scenario ---
 print("\n[2] Uncertain PEND scenario (conflicting evidence)")
-r2 = post("/v1/assess", {
-    "transaction_id": "txn_P3_002",
-    "merchant_id":    "merch_travel_001",
-    "amount":         38000.0,
-    "currency":       "INR",
-    "card_bin":       "400066",
-    "payment_method": "CARD",
-    "device_id":      "dev_tablet_new",
-    "customer_id":    "cust_travel_99",
-})
+r2 = post(
+    "/v1/assess",
+    {
+        "transaction_id": "txn_P3_002",
+        "merchant_id": "merch_travel_001",
+        "amount": 38000.0,
+        "currency": "INR",
+        "card_bin": "400066",
+        "payment_method": "CARD",
+        "device_id": "dev_tablet_new",
+        "customer_id": "cust_travel_99",
+    },
+)
 rr2 = r2.get("risk_report", {})
 print(f"  Decision        : {r2['decision']}")
 print(f"  Stage           : {r2['stage_reached']}")
@@ -93,7 +105,9 @@ print(f"  EMA reward          : {diag['ema_reward']}")
 print(f"  Is adjusted         : {diag['is_adjusted']}")
 
 # --- Test 4: Manual threshold override ---
-print("\n[4] Manual override: lower threshold for merch_food_001 (high-volume, trusted)")
+print(
+    "\n[4] Manual override: lower threshold for merch_food_001 (high-volume, trusted)"
+)
 ovr = post("/v1/merchants/merch_food_001/threshold", {"offset": -0.05})
 print(f"  New effective threshold: {ovr['effective_threshold']}")
 print(f"  Message: {ovr['message']}")

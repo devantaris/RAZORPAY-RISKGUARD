@@ -1,4 +1,4 @@
-﻿"""
+"""
 v1_ensemble.py
 ==============
 V1: Bootstrap XGBoost Ensemble + Isolation Forest Novelty Detector
@@ -16,6 +16,7 @@ V1 Decision Rules (from research, adapted for payments):
   ABSTAIN   : mean_prob < 0.30   AND std >= 0.02  (low risk but uncertain -> V2)
   APPROVE   : mean_prob < 0.30   AND std < 0.02   (clear legit)
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,11 +32,11 @@ from xgboost import XGBClassifier
 logger = logging.getLogger("riskguard.v1")
 
 # Thresholds (matched to research repo decision_engine.py)
-DECLINE_THRESHOLD   = 0.80
-ESCALATE_THRESHOLD  = 0.60
-AUTH_THRESHOLD      = 0.30
-UNCERTAINTY_THRESH  = 0.02
-ANOMALY_THRESHOLD   = -0.08
+DECLINE_THRESHOLD = 0.80
+ESCALATE_THRESHOLD = 0.60
+AUTH_THRESHOLD = 0.30
+UNCERTAINTY_THRESH = 0.02
+ANOMALY_THRESHOLD = -0.08
 
 
 class V1Ensemble:
@@ -45,8 +46,8 @@ class V1Ensemble:
     """
 
     def __init__(self):
-        self.ensemble:    Optional[List] = None
-        self.iso_forest:  Optional[IsolationForest] = None
+        self.ensemble: Optional[List] = None
+        self.iso_forest: Optional[IsolationForest] = None
         self._loaded = False
 
     # ── Model loading / saving ──────────────────────────────────────────────
@@ -56,17 +57,21 @@ class V1Ensemble:
         iso_path = os.path.join(artifact_dir, "v1_iso_forest.pkl")
         if not os.path.exists(ens_path):
             raise FileNotFoundError(f"V1 ensemble not found: {ens_path}")
-        self.ensemble   = joblib.load(ens_path)
+        self.ensemble = joblib.load(ens_path)
         self.iso_forest = joblib.load(iso_path) if os.path.exists(iso_path) else None
         self._loaded = True
-        logger.info(f"V1 loaded: ensemble={len(self.ensemble)} models, "
-                    f"iso={'yes' if self.iso_forest else 'no'}")
+        logger.info(
+            f"V1 loaded: ensemble={len(self.ensemble)} models, "
+            f"iso={'yes' if self.iso_forest else 'no'}"
+        )
 
     def save(self, artifact_dir: str) -> None:
         os.makedirs(artifact_dir, exist_ok=True)
-        joblib.dump(self.ensemble,   os.path.join(artifact_dir, "v1_xgb_ensemble.pkl"))
+        joblib.dump(self.ensemble, os.path.join(artifact_dir, "v1_xgb_ensemble.pkl"))
         if self.iso_forest:
-            joblib.dump(self.iso_forest, os.path.join(artifact_dir, "v1_iso_forest.pkl"))
+            joblib.dump(
+                self.iso_forest, os.path.join(artifact_dir, "v1_iso_forest.pkl")
+            )
         logger.info(f"V1 saved to {artifact_dir}")
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
@@ -76,8 +81,10 @@ class V1Ensemble:
         logger.info("Training V1: XGBoost Bootstrap Ensemble (5 models, isotonic)...")
         n_models = 5
         scale_pos_weight = float((len(y_train) - y_train.sum()) / max(y_train.sum(), 1))
-        logger.info(f"  scale_pos_weight={scale_pos_weight:.1f} | "
-                    f"fraud={int(y_train.sum())} legit={int((y_train==0).sum())}")
+        logger.info(
+            f"  scale_pos_weight={scale_pos_weight:.1f} | "
+            f"fraud={int(y_train.sum())} legit={int((y_train == 0).sum())}"
+        )
 
         ensemble = []
         for seed in range(n_models):
@@ -85,23 +92,28 @@ class V1Ensemble:
             idx = np.random.choice(len(X_train), len(X_train), replace=True)
             X_b, y_b = X_train[idx], y_train[idx]
             base = XGBClassifier(
-                n_estimators=300, max_depth=4, learning_rate=0.05,
-                scale_pos_weight=scale_pos_weight, eval_metric="logloss",
-                random_state=seed, tree_method="hist", device="cpu",
+                n_estimators=300,
+                max_depth=4,
+                learning_rate=0.05,
+                scale_pos_weight=scale_pos_weight,
+                eval_metric="logloss",
+                random_state=seed,
+                tree_method="hist",
+                device="cpu",
                 verbosity=0,
             )
             model = CalibratedClassifierCV(base, method="isotonic", cv=3)
             model.fit(X_b, y_b)
             ensemble.append(model)
-            logger.info(f"  Model {seed+1}/5 trained.")
+            logger.info(f"  Model {seed + 1}/5 trained.")
 
         logger.info("Training Isolation Forest (contamination=0.02)...")
         iso = IsolationForest(n_estimators=200, contamination=0.02, random_state=42)
         iso.fit(X_train)
 
-        self.ensemble   = ensemble
+        self.ensemble = ensemble
         self.iso_forest = iso
-        self._loaded    = True
+        self._loaded = True
         logger.info("V1 training complete.")
 
     # ── Inference ────────────────────────────────────────────────────────────
@@ -116,9 +128,11 @@ class V1Ensemble:
 
         probs = np.array([m.predict_proba(X)[:, 1][0] for m in self.ensemble])
         mean_prob = float(probs.mean())
-        std_prob  = float(probs.std())
+        std_prob = float(probs.std())
 
-        iso_score = float(self.iso_forest.decision_function(X)[0]) if self.iso_forest else 0.0
+        iso_score = (
+            float(self.iso_forest.decision_function(X)[0]) if self.iso_forest else 0.0
+        )
 
         return mean_prob, std_prob, iso_score
 

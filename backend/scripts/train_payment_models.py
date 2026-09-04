@@ -1,4 +1,4 @@
-﻿"""
+"""
 train_payment_models.py
 ========================
 Trains all V1-V4 pipeline models on the synthetic Indian payment transaction data.
@@ -16,6 +16,7 @@ Steps:
 Run from project root:
   python backend/scripts/train_payment_models.py
 """
+
 from __future__ import annotations
 
 import os
@@ -36,7 +37,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import precision_score, recall_score, roc_auc_score
 
 ARTIFACT_DIR = os.path.join(BACKEND_DIR, "artifacts")
-DATA_PATH    = os.path.join(BACKEND_DIR, "data", "synthetic_transactions.csv")
+DATA_PATH = os.path.join(BACKEND_DIR, "data", "synthetic_transactions.csv")
 
 os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
@@ -47,28 +48,32 @@ print("=" * 65)
 # ── 1. Load & feature-engineer ────────────────────────────────────────────────
 print("\n[1] Loading synthetic_transactions.csv ...")
 df = pd.read_csv(DATA_PATH)
-print(f"    Rows: {len(df):,} | Fraud: {df['is_fraud'].sum():,} ({df['is_fraud'].mean()*100:.1f}%)")
+print(
+    f"    Rows: {len(df):,} | Fraud: {df['is_fraud'].sum():,} ({df['is_fraud'].mean() * 100:.1f}%)"
+)
 
 
 def build_features(df: pd.DataFrame) -> np.ndarray:
     """Offline version of features.py — produces same 14-dim vector."""
     X = pd.DataFrame()
-    X["amount_log"]              = np.log1p(df["amount"])
-    X["amount_vs_merchant_avg"]  = np.clip(df["amount_vs_merchant_avg"], 0, 20)
-    X["velocity_1h_count"]       = df["velocity_1h_count"]
-    X["velocity_1h_amount_log"]  = np.log1p(df["velocity_1h_amount"])
-    X["velocity_24h_count"]      = df["velocity_24h_count"]
+    X["amount_log"] = np.log1p(df["amount"])
+    X["amount_vs_merchant_avg"] = np.clip(df["amount_vs_merchant_avg"], 0, 20)
+    X["velocity_1h_count"] = df["velocity_1h_count"]
+    X["velocity_1h_amount_log"] = np.log1p(df["velocity_1h_amount"])
+    X["velocity_24h_count"] = df["velocity_24h_count"]
     X["velocity_24h_amount_log"] = np.log1p(df["velocity_24h_amount"])
     # BIN risk: 1 if high-risk bin prefixes, else 0
     HIGH_RISK = {"400066", "404756", "410057", "438935", "461046"}
-    X["bin_risk_score"]          = df["card_bin"].apply(lambda b: 1.0 if str(b) in HIGH_RISK else 0.0)
-    X["device_seen_before"]      = df["device_seen_before"].astype(float)
-    X["is_odd_hour"]             = df["is_odd_hour"].astype(float)
-    X["hour_sin"]                = np.sin(2 * math.pi * df["hour_of_day"] / 24)
-    X["hour_cos"]                = np.cos(2 * math.pi * df["hour_of_day"] / 24)
-    X["payment_method_upi"]      = (df["payment_method"] == "UPI").astype(float)
-    X["payment_method_card"]     = (df["payment_method"] == "CARD").astype(float)
-    X["payment_method_wallet"]   = (df["payment_method"] == "WALLET").astype(float)
+    X["bin_risk_score"] = df["card_bin"].apply(
+        lambda b: 1.0 if str(b) in HIGH_RISK else 0.0
+    )
+    X["device_seen_before"] = df["device_seen_before"].astype(float)
+    X["is_odd_hour"] = df["is_odd_hour"].astype(float)
+    X["hour_sin"] = np.sin(2 * math.pi * df["hour_of_day"] / 24)
+    X["hour_cos"] = np.cos(2 * math.pi * df["hour_of_day"] / 24)
+    X["payment_method_upi"] = (df["payment_method"] == "UPI").astype(float)
+    X["payment_method_card"] = (df["payment_method"] == "CARD").astype(float)
+    X["payment_method_wallet"] = (df["payment_method"] == "WALLET").astype(float)
     return X.values.astype(np.float32)
 
 
@@ -80,7 +85,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.20, random_state=42, stratify=y
 )
 print(f"    Train: {len(X_train):,} | Test: {len(X_test):,}")
-print(f"    Test fraud: {y_test.sum()} | Test legit: {(y_test==0).sum()}")
+print(f"    Test fraud: {y_test.sum()} | Test legit: {(y_test == 0).sum()}")
 
 # ── 2. V1: XGBoost Ensemble + Isolation Forest ─────────────────────────────────
 print("\n[2] Training V1: XGBoost Ensemble + Isolation Forest ...")
@@ -93,15 +98,20 @@ v1.save(ARTIFACT_DIR)
 # V1 predictions on test set
 mean_probs, std_probs, iso_scores = [], [], []
 for i in range(len(X_test)):
-    mp, sp, iso = v1.predict(X_test[i:i+1])
-    mean_probs.append(mp); std_probs.append(sp); iso_scores.append(iso)
+    mp, sp, iso = v1.predict(X_test[i : i + 1])
+    mean_probs.append(mp)
+    std_probs.append(sp)
+    iso_scores.append(iso)
 
 mean_probs = np.array(mean_probs)
-std_probs  = np.array(std_probs)
+std_probs = np.array(std_probs)
 iso_scores = np.array(iso_scores)
 
-v1_decisions = [v1.decide(mp, sp, iso) for mp, sp, iso in zip(mean_probs, std_probs, iso_scores)]
+v1_decisions = [
+    v1.decide(mp, sp, iso) for mp, sp, iso in zip(mean_probs, std_probs, iso_scores)
+]
 from collections import Counter
+
 dist = Counter(v1_decisions)
 print(f"    V1 distribution: {dict(dist)}")
 
@@ -136,11 +146,11 @@ from app.pipeline.v3_dempster_shafer import fuse_and_route
 final_decisions = []
 
 for i in range(len(X_test)):
-    X_i = X_test[i:i+1]
-    mp  = float(mean_probs[i])
-    sp  = float(std_probs[i])
+    X_i = X_test[i : i + 1]
+    mp = float(mean_probs[i])
+    sp = float(std_probs[i])
     iso = float(iso_scores[i])
-    d   = v1_decisions[i]
+    d = v1_decisions[i]
 
     # V2
     if d == "ABSTAIN":
@@ -151,9 +161,12 @@ for i in range(len(X_test)):
     if v1_decisions[i] == "ESCALATE":
         svm_p = v3_svm.predict_proba(X_i)
         sub, _ = fuse_and_route(mean_prob=mp, std=sp, iso_score=iso, svm_prob=svm_p)
-        if   sub == "AUTO_DECLINE":   d = "DECLINE"
-        elif sub == "STEP_UP_AUTH":   d = "STEP_UP"
-        else:                         d = "PEND"
+        if sub == "AUTO_DECLINE":
+            d = "DECLINE"
+        elif sub == "STEP_UP_AUTH":
+            d = "STEP_UP"
+        else:
+            d = "PEND"
     elif d == "ABSTAIN":
         d = "PEND"
 
@@ -171,35 +184,41 @@ print("-" * 50)
 
 for state in ["APPROVE", "DECLINE", "STEP_UP", "PEND"]:
     mask = final_decisions == state
-    n    = mask.sum()
-    nf   = int((mask & (y_test == 1)).sum())
-    nl   = n - nf
+    n = mask.sum()
+    nf = int((mask & (y_test == 1)).sum())
+    nl = n - nf
     print(f"    {state:<10}: {n:>5,}  (fraud={nf:>3}, legit={nl:>5,})")
 
 # The key guarantee
-decline_mask   = final_decisions == "DECLINE"
+decline_mask = final_decisions == "DECLINE"
 false_declines = int((decline_mask & (y_test == 0)).sum())
-true_declines  = int((decline_mask & (y_test == 1)).sum())
-total_fraud    = int(y_test.sum())
-flagged_fraud  = int(((final_decisions != "APPROVE") & (y_test == 1)).sum())
+true_declines = int((decline_mask & (y_test == 1)).sum())
+total_fraud = int(y_test.sum())
+flagged_fraud = int(((final_decisions != "APPROVE") & (y_test == 1)).sum())
 
 print()
-print(f"    {'─'*45}")
+print(f"    {'─' * 45}")
 print(f"    DECLINE precision (0 false blocks): ", end="")
 if false_declines == 0:
     print(f"✅  100% ({true_declines}/{true_declines})")
 else:
-    print(f"⚠️  {true_declines/(true_declines+false_declines)*100:.1f}%  ({false_declines} false blocks!)")
+    print(
+        f"⚠️  {true_declines / (true_declines + false_declines) * 100:.1f}%  ({false_declines} false blocks!)"
+    )
 
-recall_auto  = true_declines / total_fraud if total_fraud > 0 else 0
-recall_any   = flagged_fraud / total_fraud if total_fraud > 0 else 0
+recall_auto = true_declines / total_fraud if total_fraud > 0 else 0
+recall_any = flagged_fraud / total_fraud if total_fraud > 0 else 0
 auc = roc_auc_score(y_test, mean_probs)
 
-print(f"    Fraud recall (auto-DECLINE):        {recall_auto*100:.1f}%  ({true_declines}/{total_fraud})")
-print(f"    Fraud recall (any non-APPROVE):     {recall_any*100:.1f}%  ({flagged_fraud}/{total_fraud})")
+print(
+    f"    Fraud recall (auto-DECLINE):        {recall_auto * 100:.1f}%  ({true_declines}/{total_fraud})"
+)
+print(
+    f"    Fraud recall (any non-APPROVE):     {recall_any * 100:.1f}%  ({flagged_fraud}/{total_fraud})"
+)
 print(f"    XGBoost Ensemble ROC-AUC:           {auc:.4f}")
 print(f"    False blocks on legit:              {false_declines}")
-print(f"    {'─'*45}")
+print(f"    {'─' * 45}")
 print()
 
 if false_declines > 0:

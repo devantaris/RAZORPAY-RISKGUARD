@@ -1,7 +1,8 @@
-﻿"""
+"""
 POST /v1/assess   — single transaction fraud assessment
 POST /v1/batch    — batch assessment (up to 1000 transactions)
 """
+
 from __future__ import annotations
 
 import time
@@ -11,9 +12,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.transaction import (
-    AssessRequest, AssessResponse,
-    BatchAssessRequest, BatchAssessResponse,
-    Decision, RiskReport, ShapFeature,
+    AssessRequest,
+    AssessResponse,
+    BatchAssessRequest,
+    BatchAssessResponse,
+    Decision,
+    RiskReport,
+    ShapFeature,
 )
 
 logger = logging.getLogger("riskguard.assess")
@@ -36,7 +41,9 @@ def _mock_assess(req: AssessRequest) -> AssessResponse:
                 "This skeleton will be replaced with V1-V4 staged uncertainty in Phase 2."
             ),
             shap_top_features=[
-                ShapFeature(feature="amount", impact=0.05, direction="suppresses_fraud"),
+                ShapFeature(
+                    feature="amount", impact=0.05, direction="suppresses_fraud"
+                ),
             ],
             merchant_threshold=0.80,
             chargeback_risk=None,
@@ -56,6 +63,7 @@ async def assess(req: AssessRequest) -> AssessResponse:
 
     try:
         from app.pipeline.orchestrator import get_orchestrator
+
         orch = get_orchestrator()
         result = await orch.evaluate(req)
     except ImportError:
@@ -90,6 +98,7 @@ async def batch_assess(req: BatchAssessRequest) -> BatchAssessResponse:
     for txn in req.transactions:
         try:
             from app.pipeline.orchestrator import get_orchestrator
+
             orch = get_orchestrator()
             r = await orch.evaluate(txn)
         except ImportError:
