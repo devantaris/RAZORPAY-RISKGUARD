@@ -1,4 +1,4 @@
-﻿# ── Python ──────────────────────────────────────────────────────────────────
+# ── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,8 +24,8 @@ backend/.env
 *.env.*
 !.env.example
 
-# ── ML Artifacts (too large for git — regenerate with train_payment_models.py)
-backend/artifacts/*.pkl
+# ── ML Artifacts (tracked for production deployment, total ~8.8MB)
+!backend/artifacts/*.pkl
 backend/artifacts/*.joblib
 backend/data/
 !backend/data/.gitkeep
