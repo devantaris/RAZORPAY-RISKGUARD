@@ -24,8 +24,8 @@ const PRESETS: Record<string, { label: string; desc: string; data: Partial<Asses
       card_bin: '438935',
       payment_method: 'CARD',
       device_id: 'dev_unknown_mac_99',
-      customer_id: 'cust_fraud_sim_01'
-    }
+      customer_id: 'cust_fraud_sim_01',
+    },
   },
   'Low-Risk': {
     label: '₹349 Food (UPI Legit)',
@@ -37,37 +37,37 @@ const PRESETS: Record<string, { label: string; desc: string; data: Partial<Asses
       currency: 'INR',
       payment_method: 'UPI',
       device_id: 'dev_known_iphone_14',
-      customer_id: 'cust_swiggy_regular'
-    }
+      customer_id: 'cust_swiggy_regular',
+    },
   },
   'Uncertain-Travel': {
-    label: '₹38k Travel (PEND Review)',
-    desc: 'Flight ticket with conflicting signals & high uncertainty',
+    label: '₹45k Travel (PEND Review)',
+    desc: 'Flight ticket with model disagreement & high uncertainty',
     data: {
       transaction_id: 'txn_travel_pend_003',
       merchant_id: 'merch_travel_001',
-      amount: 38000,
+      amount: 45000,
       currency: 'INR',
-      card_bin: '400066',
+      card_bin: '521234',
       payment_method: 'CARD',
       device_id: 'dev_tablet_new_02',
-      customer_id: 'cust_travel_guest'
-    }
+      customer_id: 'cust_travel_guest',
+    },
   },
   'Step-Up-Auth': {
-    label: '₹14.5k Electronics (Step-Up)',
-    desc: 'Medium risk electronics purchase triggering OTP / 3DS challenge',
+    label: '₹32k Electronics (Step-Up)',
+    desc: 'Medium-high risk electronics purchase triggering OTP / 3DS challenge',
     data: {
       transaction_id: 'txn_elec_stepup_004',
       merchant_id: 'merch_electronics_001',
-      amount: 14500,
+      amount: 32000,
       currency: 'INR',
-      card_bin: '410057',
+      card_bin: '438935',
       payment_method: 'CARD',
       device_id: 'dev_laptop_unseen',
-      customer_id: 'cust_croma_buyer'
-    }
-  }
+      customer_id: 'cust_croma_buyer',
+    },
+  },
 };
 
 export function AssessForm() {

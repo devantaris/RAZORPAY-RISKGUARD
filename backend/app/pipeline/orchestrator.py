@@ -151,6 +151,7 @@ class PipelineOrchestrator:
                 std=std_prob,
                 iso_score=iso_score,
                 svm_prob=svm_prob,
+                decline_threshold=effective_threshold,
             )
 
         # ── Stage V4: collapse to 4 terminal states ───────────────────────────
@@ -182,6 +183,12 @@ class PipelineOrchestrator:
         chargeback_risk = None
         try:
             cb_prob, _ = self._chargeback_predictor.predict(X)
+            # Domain reality for Indian payment rails:
+            # UPI payments are customer-authenticated push transfers with negligible dispute/chargeback rate (<0.1%)
+            if req.payment_method and req.payment_method.upper() == "UPI":
+                cb_prob = cb_prob * 0.01
+            elif decision == Decision.APPROVE and mean_prob < 0.05:
+                cb_prob = cb_prob * 0.05
             chargeback_risk = cb_prob if cb_prob > 0.01 else None
         except Exception:
             pass

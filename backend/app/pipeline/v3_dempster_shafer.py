@@ -36,9 +36,9 @@ MAX_IGN_SVM = 0.45
 
 # Decision thresholds
 K_CONFLICT_THRESHOLD = 0.25
-BEL_DECLINE_THRESHOLD = 0.91
-IGN_DECLINE_MAX = 0.05
-IGN_INSUFFICIENT = 0.10
+BEL_DECLINE_THRESHOLD = 0.80
+IGN_DECLINE_MAX = 0.08
+IGN_INSUFFICIENT = 0.12
 BEL_STEP_UP_THRESHOLD = 0.35
 
 BPAType = Dict[str, float]  # {'F': ..., 'L': ..., 'FL': ...}
@@ -121,6 +121,7 @@ def fuse_and_route(
     std: float,
     iso_score: float,
     svm_prob: float,
+    decline_threshold: float = BEL_DECLINE_THRESHOLD,
 ) -> Tuple[str, dict]:
     """
     Fuses three BPA sources and returns (sub_decision, belief_metrics).
@@ -140,10 +141,11 @@ def fuse_and_route(
 
     bel = metrics["bel_F"]
     ign = metrics["ignorance"]
+    eff_thresh = min(max(decline_threshold, 0.70), 0.85)
 
     if K >= K_CONFLICT_THRESHOLD:
         sub = "HUMAN_ESCALATE"
-    elif bel >= BEL_DECLINE_THRESHOLD and ign <= IGN_DECLINE_MAX:
+    elif bel >= eff_thresh and ign <= IGN_DECLINE_MAX:
         sub = "AUTO_DECLINE"
     elif ign >= IGN_INSUFFICIENT:
         sub = "HUMAN_ESCALATE"

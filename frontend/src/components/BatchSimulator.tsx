@@ -11,8 +11,8 @@ import {
 const SAMPLE_PAYLOADS: AssessRequest[] = [
   { transaction_id: 'txn_batch_001', merchant_id: 'merch_jewelry_001', amount: 98000, currency: 'INR', card_bin: '438935', payment_method: 'CARD' },
   { transaction_id: 'txn_batch_002', merchant_id: 'merch_food_001', amount: 349, currency: 'INR', payment_method: 'UPI' },
-  { transaction_id: 'txn_batch_003', merchant_id: 'merch_travel_001', amount: 38000, currency: 'INR', card_bin: '400066', payment_method: 'CARD' },
-  { transaction_id: 'txn_batch_004', merchant_id: 'merch_electronics_001', amount: 14500, currency: 'INR', card_bin: '410057', payment_method: 'CARD' },
+  { transaction_id: 'txn_batch_003', merchant_id: 'merch_travel_001', amount: 45000, currency: 'INR', card_bin: '521234', payment_method: 'CARD' },
+  { transaction_id: 'txn_batch_004', merchant_id: 'merch_electronics_001', amount: 32000, currency: 'INR', card_bin: '438935', payment_method: 'CARD' },
   { transaction_id: 'txn_batch_005', merchant_id: 'merch_food_001', amount: 120, currency: 'INR', payment_method: 'UPI' },
   { transaction_id: 'txn_batch_006', merchant_id: 'merch_gaming_001', amount: 2499, currency: 'INR', card_bin: '532101', payment_method: 'CARD' },
   { transaction_id: 'txn_batch_007', merchant_id: 'merch_jewelry_001', amount: 154000, currency: 'INR', card_bin: '461046', payment_method: 'CARD' },
@@ -31,10 +31,11 @@ export function BatchSimulator() {
     const list: AssessRequest[] = [];
     for (let i = 0; i < count; i++) {
       const base = SAMPLE_PAYLOADS[i % SAMPLE_PAYLOADS.length];
+      const variance = (i % 10 === 0 || i % 10 === 6) ? (0.95 + Math.random() * 0.1) : (0.85 + Math.random() * 0.3);
       list.push({
         ...base,
         transaction_id: `txn_sim_${Date.now()}_${i + 1}`,
-        amount: Math.round(base.amount * (0.8 + Math.random() * 0.4)),
+        amount: Math.round(base.amount * variance),
       });
     }
     return list;
