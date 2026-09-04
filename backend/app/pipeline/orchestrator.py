@@ -135,8 +135,9 @@ class PipelineOrchestrator:
 
         # ── Stage V2 (ABSTAIN only) ───────────────────────────────────────────
         v2_decision = v1_decision
+        v2_prob = None
         if v1_decision == "ABSTAIN":
-            v2_decision, _ = self._v2.decide(X)
+            v2_decision, v2_prob = self._v2.decide(X)
 
         # ── Stage V3 (ESCALATE only) ──────────────────────────────────────────
         v3_sub = v2_decision
@@ -185,13 +186,25 @@ class PipelineOrchestrator:
         except Exception:
             pass
 
+        # ── Stage-appropriate confidence ──────────────────────────────────────
+        if stage == "V3" and ds_metrics:
+            confidence = float(np.clip(ds_metrics.get("bel_F", mean_prob), 0.0, 1.0))
+        elif stage == "V2" and v2_prob is not None:
+            confidence = float(np.clip(v2_prob, 0.0, 1.0))
+        else:
+            confidence = float(np.clip(mean_prob, 0.0, 1.0))
+
         # ── 3B: Record bandit outcome (async, fire-and-forget) ────────────────
-        confidence = float(np.clip(mean_prob, 0.0, 1.0))
         asyncio.ensure_future(
             self._threshold_bandit.record_outcome(
                 req.merchant_id, str(decision.value), confidence
             )
         )
+
+        # ── Round DS metrics for API response ─────────────────────────────────
+        ds_response = None
+        if ds_metrics:
+            ds_response = {k: round(v, 4) for k, v in ds_metrics.items()}
 
         return AssessResponse(
             transaction_id=req.transaction_id,
@@ -212,6 +225,7 @@ class PipelineOrchestrator:
                 chargeback_risk=round(chargeback_risk, 4) if chargeback_risk else None,
                 uncertainty_type=unc_type if decision == Decision.PEND else None,
                 pend_reason_code=reason_code,
+                ds_metrics=ds_response,
             ),
             inference_ms=0.0,
         )

@@ -149,8 +149,10 @@ class V1Ensemble:
             return "ESCALATE"
         if novelty:
             return "ESCALATE"
-        if mean_prob >= AUTH_THRESHOLD:
+        if mean_prob >= AUTH_THRESHOLD and std_prob < UNCERTAINTY_THRESH:
             return "STEP_UP"
+        if mean_prob >= AUTH_THRESHOLD and std_prob >= UNCERTAINTY_THRESH:
+            return "ESCALATE"  # uncertain medium-risk → DS fusion
         if std_prob >= UNCERTAINTY_THRESH:
             return "ABSTAIN"
         return "APPROVE"

@@ -1,4 +1,4 @@
-﻿# Razorpay RiskGuard
+# Razorpay RiskGuard
 
 > **AI Risk Manager** - Razorpay AI Builder Internship 2026, Track 2
 
@@ -14,6 +14,8 @@ Auto-DECLINE precision:   100%    (0 false blocks on legit txns)
 Ensemble ROC-AUC:         0.9840
 End-to-end latency:       ~96ms   (full agentic pipeline)
 Chargeback ROC-AUC:       0.93
+V1 decision gates:        STEP_UP only when std < 0.02 (confident)
+DS fusion coverage:       uncertain medium-risk → V3 Dempster-Shafer
 ```
 
 ## Architecture

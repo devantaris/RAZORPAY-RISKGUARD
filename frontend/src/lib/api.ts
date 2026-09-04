@@ -14,6 +14,14 @@ export interface RiskReport {
   chargeback_risk: number | null;
   uncertainty_type: string | null;
   pend_reason_code: string | null;
+  ds_metrics: {
+    bel_F: number;
+    bel_L: number;
+    pl_F: number;
+    pl_L: number;
+    ignorance: number;
+    conflict_K: number;
+  } | null;
 }
 
 export interface AssessResponse {

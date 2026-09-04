@@ -197,7 +197,7 @@ total_fraud = int(y_test.sum())
 flagged_fraud = int(((final_decisions != "APPROVE") & (y_test == 1)).sum())
 
 print()
-print(f"    {'─' * 45}")
+print(f"    {'-' * 45}")
 print(f"    DECLINE precision (0 false blocks): ", end="")
 if false_declines == 0:
     print(f"✅  100% ({true_declines}/{true_declines})")
@@ -218,7 +218,7 @@ print(
 )
 print(f"    XGBoost Ensemble ROC-AUC:           {auc:.4f}")
 print(f"    False blocks on legit:              {false_declines}")
-print(f"    {'─' * 45}")
+print(f"    {'-' * 45}")
 print()
 
 if false_declines > 0:

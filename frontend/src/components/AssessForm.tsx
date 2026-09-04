@@ -218,7 +218,7 @@ export function AssessForm() {
           {/* Key Metrics Strip */}
           <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="text-[10px] text-slate-400 uppercase font-semibold">Confidence</div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold">P(Fraud)</div>
               <div className="font-bold text-slate-800 mt-0.5">{(result.confidence * 100).toFixed(1)}%</div>
             </div>
             
@@ -240,6 +240,48 @@ export function AssessForm() {
               </div>
             </div>
           </div>
+
+          {/* DS Belief Fusion Metrics (when V3 is reached) */}
+          {result.risk_report.ds_metrics && (
+            <div>
+              <div className="text-[11px] font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-purple-600" />
+                Dempster-Shafer Belief Fusion Metrics
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center text-xs font-mono">
+                <div className={`p-2.5 rounded-xl border ${
+                  result.risk_report.ds_metrics.bel_F >= 0.91
+                    ? 'bg-rose-50 border-rose-200'
+                    : result.risk_report.ds_metrics.bel_F >= 0.35
+                    ? 'bg-amber-50 border-amber-200'
+                    : 'bg-slate-50 border-slate-100'
+                }`}>
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Bel(Fraud)</div>
+                  <div className="font-bold text-slate-800 mt-0.5">{(result.risk_report.ds_metrics.bel_F * 100).toFixed(1)}%</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Bel(Legit)</div>
+                  <div className="font-bold text-emerald-700 mt-0.5">{(result.risk_report.ds_metrics.bel_L * 100).toFixed(1)}%</div>
+                </div>
+                <div className={`p-2.5 rounded-xl border ${
+                  result.risk_report.ds_metrics.ignorance >= 0.10
+                    ? 'bg-amber-50 border-amber-200'
+                    : 'bg-slate-50 border-slate-100'
+                }`}>
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Ignorance</div>
+                  <div className="font-bold text-slate-800 mt-0.5">{(result.risk_report.ds_metrics.ignorance * 100).toFixed(1)}%</div>
+                </div>
+                <div className={`p-2.5 rounded-xl border ${
+                  result.risk_report.ds_metrics.conflict_K >= 0.25
+                    ? 'bg-rose-50 border-rose-200'
+                    : 'bg-slate-50 border-slate-100'
+                }`}>
+                  <div className="text-[10px] text-slate-400 uppercase font-semibold">Conflict K</div>
+                  <div className="font-bold text-slate-800 mt-0.5">{result.risk_report.ds_metrics.conflict_K.toFixed(3)}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Agent Narrative Explanation */}
           <div>

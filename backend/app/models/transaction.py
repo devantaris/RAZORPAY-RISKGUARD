@@ -65,6 +65,10 @@ class RiskReport(BaseModel):
     chargeback_risk: Optional[float] = Field(None, ge=0.0, le=1.0)
     uncertainty_type: Optional[str] = Field(None)
     pend_reason_code: Optional[str] = Field(None)
+    ds_metrics: Optional[dict] = Field(
+        None,
+        description="Dempster-Shafer belief metrics: bel_F, bel_L, pl_F, pl_L, ignorance, conflict_K",
+    )
 
 
 # ── Response ────────────────────────────────────────────────────────────────
